@@ -110,6 +110,15 @@ def buildWindowsManagedImage(String os_series, String img_name_suffix, String la
             def jenkins_subnet_name = params.JENKINS_SUBNET_NAME
             def azure_image_id = AZURE_IMAGES_MAP[os_series]["image"]
 
+            stage("Debug") {
+                sh """
+                    whoami
+                    id
+                    newgrp docker
+                    id
+                    stat /var/run/docker.sock
+                """
+            }
             stage("Prepare Resource Group") {
                 def az_rg_create_script = """
                     ${az_login_script}
@@ -311,12 +320,34 @@ node(params.AGENTS_LABEL) {
             """
         }
     }
+    stage("Install Docker") {
+        retry(10) {
+            sh """#!/bin/bash
+                ${helpers.WaitForAptLock()}
+                sudo apt-get update
+                sudo apt-get install -y \
+                    ca-certificates \
+                    curl \
+                    gnupg \
+                    lsb-release
+                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                echo \
+                    "deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+                    \$(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                sudo apt-get update
+                sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+                sudo usermod -aG docker \$(whoami)
+                sudo cat /etc/group
+                newgrp docker
+            """
+        }
+    }
     stage("Build Agents") {
         parallel "Build Windows Server 2019 - nonSGX"       : { buildWindowsManagedImage("win2019", "ws2019-nonSGX", "SGX1FLC-NoIntelDrivers", image_id, image_version) },
                  "Build Windows Server 2019 - SGX1"         : { buildWindowsManagedImage("win2019", "ws2019-SGX", "SGX1", image_id, image_version) },
-                 "Build Windows Server 2019 - SGX1FLC DCAP" : { buildWindowsManagedImage("win2019", "ws2019-SGX-DCAP", "SGX1FLC", image_id, image_version) },
-                 "Build Ubuntu 18.04" :                       { buildLinuxManagedImage("ubuntu", "18.04", image_id, image_version) },
-                 "Build Ubuntu 20.04" :                       { buildLinuxManagedImage("ubuntu", "20.04", image_id, image_version) }
+                 "Build Windows Server 2019 - SGX1FLC DCAP" : { buildWindowsManagedImage("win2019", "ws2019-SGX-DCAP", "SGX1FLC", image_id, image_version) }
+                //  "Build Ubuntu 18.04" :                       { buildLinuxManagedImage("ubuntu", "18.04", image_id, image_version) },
+                //  "Build Ubuntu 20.04" :                       { buildLinuxManagedImage("ubuntu", "20.04", image_id, image_version) }
     }
     stage("Clean Workspace") {
         cleanWs()
