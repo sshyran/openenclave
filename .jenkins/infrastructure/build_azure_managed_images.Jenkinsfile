@@ -4,8 +4,8 @@
 import java.time.*
 import java.time.format.DateTimeFormatter
 
-OECI_LIB_VERSION = env.OECI_LIB_VERSION ?: "master"
-library "OpenEnclaveJenkinsLibrary@${params.OECI_LIB_VERSION}"
+OECI_LIB_VERSION = params.OECI_LIB_VERSION ?: "master"
+library "OpenEnclaveJenkinsLibrary@${OECI_LIB_VERSION}"
 
 GLOBAL_TIMEOUT_MINUTES = 480
 
@@ -70,7 +70,7 @@ def buildLinuxManagedImage(String os_type, String version, String managed_image_
                             usernamePassword(credentialsId: SERVICE_PRINCIPAL_CREDENTIALS_ID,
                                              passwordVariable: 'SERVICE_PRINCIPAL_PASSWORD',
                                              usernameVariable: 'SERVICE_PRINCIPAL_ID'),
-                            string(credentialsId: 'OSCTLabSubID', variable: 'SUBSCRIPTION_ID'),
+                            string(credentialsId: 'openenclaveci-subscription-id', variable: 'SUBSCRIPTION_ID'),
                             string(credentialsId: 'TenantID', variable: 'TENANT_ID')]) {
                         sh '''#!/bin/bash
                             az login --service-principal -u ${SERVICE_PRINCIPAL_ID} -p ${SERVICE_PRINCIPAL_PASSWORD} --tenant ${TENANT_ID}
@@ -104,12 +104,12 @@ def buildWindowsManagedImage(String os_series, String img_name_suffix, String la
         def jenkins_subnet_name = params.JENKINS_SUBNET_NAME
         def azure_image_id = AZURE_IMAGES_MAP[os_series]["image"]
 
-        stage("Docker Login") {
+        stage("Azure CLI Login") {
             withCredentials([
                     usernamePassword(credentialsId: SERVICE_PRINCIPAL_CREDENTIALS_ID,
                                         passwordVariable: 'SERVICE_PRINCIPAL_PASSWORD',
                                         usernameVariable: 'SERVICE_PRINCIPAL_ID'),
-                    string(credentialsId: 'OSCTLabSubID', variable: 'SUBSCRIPTION_ID'),
+                    string(credentialsId: 'openenclaveci-subscription-id', variable: 'SUBSCRIPTION_ID'),
                     string(credentialsId: 'TenantID', variable: 'TENANT_ID')]) {
                 sh '''#!/bin/bash
                     az login --service-principal -u ${SERVICE_PRINCIPAL_ID} -p ${SERVICE_PRINCIPAL_PASSWORD} --tenant ${TENANT_ID}
