@@ -258,6 +258,8 @@ def ACCHostVerificationPackageTest(String version, String build_type) {
                 println("ACC-1804 running Docker container with ${devices}")
                 println("Generating certificates and reports ...")
                 def task = """
+                           echo $(whoami)
+                           env
                            ${helpers.ninjaBuildCommand(cmakeArgs)}
                            pushd tests/host_verify/host
                            openssl ecparam -name prime256v1 -genkey -noout -out keyec.pem
@@ -322,6 +324,8 @@ def ACCHostVerificationPackageTest(String version, String build_type) {
                                        -DCMAKE_BUILD_TYPE=${build_type} \
                                        -Wdev"
                 def task = """
+                           echo $(whoami)
+                           env
                            ${helpers.ninjaBuildCommand(cmakeArgs)}
                            cpack -G DEB -D CPACK_DEB_COMPONENT_INSTALL=ON -D CPACK_COMPONENTS_ALL=OEHOSTVERIFY
                            if [ -d /opt/openenclave ]; then sudo rm -r /opt/openenclave; fi
