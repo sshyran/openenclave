@@ -9,7 +9,6 @@ TIMEOUT_MINUTES = params.TIMEOUT_MINUTES ?: 240
 
 INTERNAL_REPO = params.INTERNAL_REPO ?: "https://oejenkinscidockerregistry.azurecr.io"
 INTERNAL_REPO_CREDS = params.INTERNAL_REPO_CREDS ?: "oejenkinscidockerregistry"
-DOCKERHUB_REPO_CREDS = params.DOCKERHUB_REPO_CREDS ?: "oeciteamdockerhub"
 
 def buildWindowsDockerContainers() {
     node(AGENTS_LABEL) {
@@ -27,16 +26,6 @@ def buildWindowsDockerContainers() {
                     oe.exec_with_retry { oe2019.push() }
                     if(TAG_LATEST == "true") {
                         oe.exec_with_retry { oe2019.push('latest') }
-                    }
-                }
-            }
-            stage("Push to OE Docker Hub Registry") {
-                docker.withRegistry('', DOCKERHUB_REPO_CREDS) {
-                    if(PUBLISH_DOCKER_HUB == "true") {
-                        oe.exec_with_retry { puboe2019.push() }
-                        if(TAG_LATEST == "true") {
-                            oe.exec_with_retry { puboe2019.push('latest') }
-                        }
                     }
                 }
             }

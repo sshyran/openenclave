@@ -19,13 +19,11 @@ pipeline {
         string(name: "INTERNAL_REPO", defaultValue: "https://oejenkinscidockerregistry.azurecr.io", description: "Url for internal Docker repository")
         string(name: "OECI_LIB_VERSION", defaultValue: 'master', description: 'Version of OE Libraries to use')
         string(name: "DEVKITS_URI", defaultValue: 'https://oejenkins.blob.core.windows.net/oejenkins/OE-CI-devkits-d1634ce8.tar.gz', description: "Uri for downloading the OECI Devkit")
-        booleanParam(name: "PUBLISH_DOCKER_HUB", defaultValue: false, description: "Publish container to OECITeam Docker Hub?")
         booleanParam(name: "TAG_LATEST", defaultValue: false, description: "Update the latest tag to the currently built DOCKER_TAG")
     }
     environment {
         INTERNAL_REPO_CREDS = 'oejenkinscidockerregistry'
         // Docker plugin cannot seem to use credentials from Azure Key Vault
-        DOCKERHUB_REPO_CREDS = 'oeciteamdockerhub'
         BASE_DOCKERFILE_DIR = ".jenkins/infrastructure/docker/dockerfiles/linux/base/"
         LINUX_DOCKERFILE = ".jenkins/infrastructure/docker/dockerfiles/linux/Dockerfile"
     }
@@ -131,7 +129,7 @@ pipeline {
                             steps {
                                 script {
                                     buildArgs = common.dockerBuildArgs("UID=\$(id -u)", "UNAME=\$(id -un)",
-                                                                    "GID=\$(id -g)", "GNAME=\$(id -gn)")
+                                                                       "GID=\$(id -g)", "GNAME=\$(id -gn)")
                                     oe1804 = common.dockerImage("oetools-18.04:${DOCKER_TAG}", LINUX_DOCKERFILE, "${buildArgs} --build-arg ubuntu_version=18.04 --build-arg devkits_uri=${params.DEVKITS_URI}")
                                     oe1804.inside("--user root:root --cap-add=SYS_PTRACE --device /dev/sgx:/dev/sgx --volume /var/run/aesmd/aesm.socket:/var/run/aesmd/aesm.socket") {
                                         sh """
@@ -173,20 +171,6 @@ pipeline {
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-            }
-        }
-        stage("Push to OE Docker Registry") {
-            steps {
-                script {
-                    docker.withRegistry(params.INTERNAL_REPO, env.INTERNAL_REPO_CREDS) {
-                        common.exec_with_retry { oe1804.push() }
-                        common.exec_with_retry { oe2004.push() }
-                        if ( params.TAG_LATEST ) {
-                            common.exec_with_retry { oe1804.push('latest') }
-                            common.exec_with_retry { oe2004.push('latest') }
                         }
                     }
                 }
