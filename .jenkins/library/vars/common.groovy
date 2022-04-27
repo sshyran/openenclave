@@ -83,7 +83,6 @@ def runTask(String task) {
                 set -o pipefail
                 source /etc/profile
                 echo \$(whoami)
-                env
                 ${task}
             """
     }
